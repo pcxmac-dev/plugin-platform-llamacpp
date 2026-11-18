@@ -1,20 +1,25 @@
-"""What the platform's page draws: Main (status and main_more) asks no server and runs nothing; its tables What leaves
-this machine, On this system (each row on its stand-in system: Windows without its C runtime or nvidia-smi, Linux,
-WSL, another processor) and What Install brings with its build form; every form's fields are its hook's arguments in
-their order and its words name only its fields; a key kept is in no answer, page, line or error; and the command
-line prints the status and an instance's lines to paste without running anything."""
+"""What the platform's page draws: Main (status and main_more) asks no server, connects to no port, reads no boot
+registration and runs nothing; its tables What leaves this machine, On this system (each row on its stand-in system:
+Windows without its C runtime or nvidia-smi, Linux, WSL, another processor) and What Install brings with its build
+form; every form's fields are its hook's arguments in their order and its words name only its fields; a key kept is
+in no answer, page, line or error; the command line prints the status, an instance's lines to paste, and the
+install's size, hosts and licence before its refusal, without running anything; and a detach pauses a download
+under way through its router."""
 from __future__ import annotations
 
 import inspect
 import json
 import re
+import threading
 
 import pytest
+
+from liminal_libs.machines.endpoint import Reply
 
 import plugin_platform_llamacpp as plugin
 from plugin_platform_llamacpp import __main__ as cli
 from plugin_platform_llamacpp import release
-from conftest import KEY, local, router, running
+from conftest import KEY, load, local, router, running
 
 
 def _tables(out: dict) -> dict:
@@ -29,8 +34,10 @@ def test_main_asks_no_server_and_runs_nothing(world):
     p.add_instance("gpu", "remote", "https://gpu.example.org", None, False)
     world.transport.asked.clear()
     world.runner.ran.clear()
+    heard, calls = list(world.heard), list(world.boot.calls)  # (adding asked this machine's ports: a click's)
     out = p.status()
     assert world.transport.asked == [] and world.runner.ran == []
+    assert world.heard == heard and world.boot.calls == calls  # no port connected to, no boot registration read
     assert out["valid"] and out["summary"].startswith("llama.cpp 1.0.0 (b12359), its CUDA 13 build; 0 of 1 running")
     tables = _tables(out)
     assert {"Instances", "What leaves this machine", "What Install brings"} <= set(tables)
@@ -157,22 +164,93 @@ def test_the_command_line_prints_the_status_and_says_its_usage(world, capsys):
     assert world.runner.ran == [] and world.transport.asked == []
 
 
-def test_detach_pauses_a_download_under_way(world):
+def test_the_command_lines_install_says_its_size_hosts_and_licence_before_its_accept(world, capsys):
+    """The review: `install` without --accept-licence printed the refusal alone, so `install --accept-licence` was
+    accepted unseen. It prints what the page's confirmation says first: what is downloaded, from where, its size,
+    what is checked and the licence; then the refusal. Nothing is downloaded or run."""
     p = world.plugin("windows")
+    keep = cli.MACHINE
+    cli.MACHINE = p
+    try:
+        assert cli.main(["install"]) == 1
+    finally:
+        cli.MACHINE = keep
+    out = capsys.readouterr()
+    shown = " ".join(out.out.split())
+    pkg = p.package()
+    for part in ("Install llama.cpp 1.0.0 (b12359)?", "github.com and release-assets.githubusercontent.com",
+                 "about 678 MB", "checked against the size and sha256 pinned in this plugin", "MIT, llama.cpp's own",
+                 "NVIDIA's CUDA runtime, under NVIDIA's terms", "Each model carries its own licence"):
+        assert part in shown, part
+    assert " ".join(pkg.parts.split()) in shown and "refused:" not in out.out
+    assert out.err.startswith("refused: the licence of llama.cpp 1.0.0 (b12359) is not accepted yet")
+    assert world.opener.asked == [] and world.runner.ran == [] and world.transport.asked == []
+
+
+def test_detach_pauses_a_download_under_way(world):
+    """The review: this test checked the panel's flag alone. A download is driven in a thread through a router whose
+    event stream holds; a detach cancels it, and the router is asked to pause it (POST /models/unload), its part
+    kept."""
+    p = world.plugin("windows")
+    world.installed(p)
+    local(p, offline="off")
+    running(p, world)
+    router(world)
+    p.models_of("default")
+    model = "ggml-org/gemma-3-4b-it-GGUF:Q4_K_M"
+    world.transport.on("GET", "/api/models/ggml-org/gemma-3-4b-it-GGUF", (200, load("hub-model.json")),
+                       "huggingface.co")
+    world.transport.on("GET", "/api/models/ggml-org/gemma-3-4b-it-GGUF/tree/main", (200, load("hub-tree.json")),
+                       "huggingface.co")
+    p.find(model)
+    under_way, done = threading.Event(), threading.Event()
+
+    def held(*a):  # a stream that says one line of progress, then nothing until the download is over
+        def chunks():
+            yield ("data: " + json.dumps({"model": model, "event": "download_progress",
+                                          "data": {"progress": {"a.gguf": {"done": 1, "total": 9}}}}) + "\n\n").encode()
+            under_way.set()
+            while not done.wait(0.01):
+                yield b""
+        return Reply(200, {"content-type": "text/event-stream"}, chunks())
+    world.transport.on("POST", "/models", (200, {"success": True}))
+    world.transport.on("POST", "/models/unload", (200, {"success": True}))
+    world.transport.on("GET", "/models/sse", held)
 
     class Panel(list):
-        cancelled = False
+        def __init__(self):
+            super().__init__()
+            self._stop = threading.Event()
 
         def __call__(self, line):
             self.append(line)
 
         def cancel(self):
-            self.cancelled = True
+            self._stop.set()
 
-    panel = Panel()
-    p._rt.pull = panel
-    p.detach()
-    assert panel.cancelled and p.app is None
+        @property
+        def cancelled(self):
+            return self._stop.is_set()
+
+        def wait_cancelled(self, timeout):
+            return self._stop.wait(timeout)
+
+    panel, answers = Panel(), []
+    pulling = threading.Thread(target=lambda: answers.append(p.pull("default", model, True, log=panel)),
+                               name="test-pull")
+    pulling.start()
+    try:
+        assert under_way.wait(5), "the download did not get under way"
+        p.detach()
+        pulling.join(5)
+    finally:
+        done.set()
+        pulling.join(5)
+    assert not pulling.is_alive() and panel.cancelled and p.app is None
+    [answer] = answers
+    assert not answer["ok"] and answer["said"].startswith(f"cancelled: what is here of {model} is kept")
+    paused = [json.loads(b) for m, u, _, b in world.transport.asked if m == "POST" and u.endswith("/models/unload")]
+    assert paused == [{"model": model}]
 
 
 def test_the_module_says_its_users_words_and_its_design():

@@ -12,8 +12,9 @@ server); serving what it tells the other AI plugins; models asks an instance for
 lines that start an instance's server in a terminal of yours (PowerShell's on Windows, sh's on Linux), its key the
 placeholder you replace, never the key; find looks a model up at the Hugging Face Hub (its files, size and licence).
 install installs the pinned llama.cpp with the build kept (A-critique M5: this command line has the install the
-page has): without --accept-licence it prints what it would download and its licence, and stops. Its instances are
-read through this process's environment, the login of a command line."""
+page has): it first prints what the page's confirmation says (what is downloaded, from which hosts, its size, what is
+checked against a pinned sum, and its licence), then, without --accept-licence, the refusal that asks for it, and
+stops. Its instances are read through this process's environment, the login of a command line."""
 from __future__ import annotations
 
 import json
@@ -33,6 +34,17 @@ def said(answer: dict) -> int:
     for line in answer.get("lines") or []:
         print(f"  {line}")
     return 0 if answer.get("ok", True) else 1
+
+
+def install(m, accepted: bool) -> int:
+    """The install as the page asks it: the words of its confirmation first, where the page offers it (what is
+    downloaded, from which hosts, its size, what is checked and the licence: the review of 0.1.0), then the install,
+    which refuses without the licence accepted (--accept-licence), or for what the page would say instead."""
+    offered = next((f for f in m.status().get("forms") or [] if f.get("id") == "ai-install"), None)
+    if offered is not None:
+        print(offered["confirm"]["title"])
+        print(f"  {offered['confirm']['words']}")
+    return said(m.install(accept_licence=accepted, log=print))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -65,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
         if what == "find" and len(rest) == 1:
             return said(m.find(rest[0]))
         if what == "install" and set(rest) <= {"--accept-licence"}:
-            return said(m.install(accept_licence="--accept-licence" in rest, log=print))
+            return install(m, "--accept-licence" in rest)
     except Refusal as e:
         more = " (--accept-licence accepts it)" if getattr(e, "accept", None) == "accept_licence" else ""
         print(f"refused: {e}{more}", file=sys.stderr)

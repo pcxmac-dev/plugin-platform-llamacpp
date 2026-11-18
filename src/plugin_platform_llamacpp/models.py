@@ -14,7 +14,11 @@ the server can").
   stream /models/sse, whose download_progress the panel shows); refused before its first line, from what is kept
   alone (the lookup, the instance's state), then asked twice with the model's size, files, folder, free space and
   licence. Cancel pauses it (POST /models/unload: llama.cpp keeps its part, listed as incomplete, and a next
-  download goes on from it); it stops by itself after 6 hours. No Hugging Face token is given to the server.
+  download goes on from it); it stops by itself after 6 hours. No Hugging Face token is given to the server. A server
+  run here that is started offline (its Offline setting, on by default) downloads nothing, so Download… is off for it
+  until Offline is turned off. A lookup the Hub answered with nothing to download (no such repository, or none of its
+  files for the quantization typed) offers none; one the Hub did not answer can be downloaded unseen, asked twice, the
+  quantization as typed and the projector as the router picks it.
 - Delete (DELETE /models), Load (POST /models/load), Unload (POST /models/unload), Details (the router's listing and
   the loaded model's /props, asked with autoload off): each confirmed but Details, each refused in words where the
   server cannot (one model's server; a model of your GGUF folder, which llama.cpp never deletes; one loaded)."""
@@ -60,10 +64,13 @@ GATED = ("gated: its files need a Hugging Face account that was given access, an
 
 @dataclass(frozen=True)
 class Found:
-    """A model looked up: what is downloaded (`model`, as llama.cpp names it: user/repository:QUANTIZATION), where it
-    was looked up and its page, when (`at`), its size in bytes and its files, its licence (and its page), whether it
-    is gated, why its size or licence is not said ("" when the lookup was whole), what was typed (`asked`), its
-    projector's file and every file's name."""
+    """A model looked up: what is downloaded (`model`, as llama.cpp names it: user/repository:QUANTIZATION, the
+    quantization typed kept whatever the Hub answered), where it was looked up and its page, when (`at`), its size in
+    bytes and its files, its licence (and its page), whether it is gated, why its size or licence is not said (""
+    when the lookup was whole), whether that is because the Hub said there is nothing to download for it (`absent`:
+    no such repository, or none of its files for the quantization: nothing that was asked can be downloaded; else the
+    Hub did not answer, and a download would be unseen), what was typed (`asked`), its projector's file and every
+    file's name."""
 
     model: str
     where: str
@@ -78,10 +85,16 @@ class Found:
     mmproj: str = ""
     names: tuple = ()
     licence_page: str = ""
+    absent: bool = False
 
     @property
     def ok(self) -> bool:
         return not self.why
+
+    @property
+    def unseen(self) -> bool:
+        """Whether a download of it would be unseen: the Hub did not answer, so its size and licence are not said."""
+        return bool(self.why) and not self.absent
 
 
 @dataclass(frozen=True)
@@ -278,12 +291,14 @@ def find(p, model) -> dict:
     repo, tag = clean_model(model)
     typed = f"{repo}:{tag}" if tag else repo
     at, where = hub(p), hub_host()
-    info, why, files = None, "", []
+    info, why, files, absent = None, "", [], False
     try:
         info = at.get(f"/api/models/{repo}")
     except EndpointError as e:
-        why = ("it knows no such model, or it is private" if e.status in (401, 404)
-               else f"it did not answer ({' '.join(str(e).split())[:160]})")
+        if e.status in (401, 404):  # (no token is sent: a private one is as none, for this plugin and llama.cpp)
+            why, absent = "it knows no such model, or it is private", True
+        else:
+            why = f"it did not answer ({' '.join(str(e).split())[:160]})"
     if info is not None and not isinstance(info, dict):
         info, why = None, "its answer is not a model's card"
     if info is not None:
@@ -292,8 +307,9 @@ def find(p, model) -> dict:
         except EndpointError as e:
             why = f"its files could not be listed ({' '.join(str(e).split())[:160]})"
     chosen, mmproj, quant = pick(files, tag)
-    if info is not None and not why and not chosen:
-        why = f"{repo} holds no GGUF file llama.cpp takes" + (f" for {tag}" if tag else "")
+    if info is not None and not why and not chosen:  # (llama.cpp's router refuses it too: "resolves no file")
+        why, absent = f"{repo} holds no GGUF file llama.cpp takes" + (f" for {tag}" if tag else ""), True
+    quant = quant or tag.upper()  # what was typed is what is asked for, whatever the Hub answered
     named, link = _licence(info or {})
     gated = bool(info) and info.get("gated") not in (None, False, "false", "False")
     taken = [*chosen, *([mmproj] if mmproj else [])]
@@ -301,8 +317,11 @@ def find(p, model) -> dict:
     found = Found(model=f"{repo}:{quant}" if quant else repo, where=where, page=f"{release.HUB}/{repo}",
                   at=p.out.clock(), size=size or None, files=len(taken), licence=named, gated=gated, why=why,
                   asked=typed, mmproj=mmproj.path if mmproj else "", names=tuple(f.path for f in taken),
-                  licence_page=link)
+                  licence_page=link, absent=absent)
     keep(p, found)
+    if absent:
+        return p._reply(f"{typed}: {where} says there is nothing to download for it: {why}", False,
+                        ["kept an hour: Download… is off for it (nothing that was asked can be downloaded)"])
     if why:
         return p._reply(f"{typed}: {where} did not say its size or licence: {why}", False,
                         ["kept an hour: Download… would ask twice, saying it would be downloaded unseen"])
@@ -345,9 +364,13 @@ def server_kind(p, instance) -> tuple[bool | None, int | None]:
 
 
 def unable(p, instance, what: str) -> str:
-    """"" or why an instance cannot do `what` (download, delete, load) now, in words: from kept state alone."""
+    """"" or why an instance cannot do `what` (download, delete, load) now, in words: from kept state alone. A server
+    run here that is started offline (its Offline setting, read as it starts: Change… is refused while it runs)
+    downloads nothing: its router refuses what is not in its folder."""
     name = instance.name
     verbs = {"download": "downloads", "delete": "deletes", "load": "loads and unloads"}
+    if what == "download" and instance.where == "local" and server.offline(instance):
+        return server.offline_words(instance)
     if instance.where == "local" and name not in p.running():
         return f"start {name} first: llama.cpp {verbs[what]} a model through its running server"
     router, build = server_kind(p, instance)
@@ -372,9 +395,9 @@ def _where_words(p, instance) -> str:
 
 def _accept_words(p, instance, found: Found) -> str:
     """The second confirmation of a download, built from the kept lookup alone (nothing asked)."""
-    if not found.ok:
+    if found.unseen:
         return (f"{found.where} did not say {found.model}'s size or licence ({found.why}): it would be downloaded "
-                "unseen.")
+                "unseen, its quantization as typed and its projector as llama.cpp's router picks them.")
     folder = ""
     if instance.where == "local":
         free = release.disk_free(server.models_folder(p, instance))
@@ -389,8 +412,9 @@ def _accept_words(p, instance, found: Found) -> str:
 
 def pull(p, name, model, accept_licence=False, log=None) -> dict:
     """A model downloaded by a router (a job: its progress in the panel, Cancel pauses it). Refused before its first
-    line, from what is kept alone: an instance that cannot download now; a name that is none; no lookup kept; a
-    gated model; too little free in a local server's folder; then its licence and size, asked twice."""
+    line, from what is kept alone: an instance that cannot download now (a server run here started offline among
+    them); a name that is none; no lookup kept; one the Hub said there is nothing to download for; a gated model;
+    too little free in a local server's folder; then its licence and size, asked twice."""
     instance = p.instance(name)
     clean_model(model)
     why = unable(p, instance, "download")
@@ -399,6 +423,8 @@ def pull(p, name, model, accept_licence=False, log=None) -> dict:
     found = found_of(p, model)
     if found is None:
         raise Refusal(f"look {model} up first (Find a model): its size and licence are read before a download")
+    if found.absent:
+        raise Refusal(f"{found.model}: {found.where} says {found.why}: nothing that was asked can be downloaded")
     if found.gated:
         raise Refusal(f"{found.model} is {GATED}")
     if instance.where == "local" and found.size:
@@ -423,8 +449,12 @@ def _download(p, instance, found: Found, log) -> dict:
         if cancel():
             return p._reply(f"cancelled: nothing of {target} was asked for", False)
         at = p.endpoint(instance, timeout=POST_S)
+        # the files the lookup read, its projector among them where it found one; downloaded unseen, the router's
+        # own picks (its default sidecars bring a projector where the repository has one)
+        asked = {"model": target} if found.unseen else {"model": target,
+                                                         "sidecars": ["mmproj"] if found.mmproj else []}
         try:
-            at.post("/models", {"model": target, "sidecars": ["mmproj"] if found.mmproj else []})
+            at.post("/models", asked)
         except EndpointError as e:
             return p._reply(f"{target} was not downloaded: {name} said {' '.join(str(e).split())[:300]}", False)
         ended = _follow(p, at, target, Progress(log, clock=p.out.clock), cancel, log)
@@ -659,7 +689,20 @@ def details(p, name, model) -> dict:
         lines += _props_lines(props if isinstance(props, dict) else {})
     else:
         lines.append(f"{row['id']} is not loaded: its file, its context and its slots are said once it is")
+    lines.append(_told(instance, row))
     return p._reply(f"{row['id']} on {name}", True, lines)
+
+
+def _told(instance, row: dict) -> str:
+    """What context the harnesses are told a router's model runs with (its `serving` row), in words."""
+    context = row.get("context")
+    if context:
+        setting = instance.where == "local" and instance.settings.get("context") == context
+        return f"the harnesses are told its context is {context:,} tokens" + (" (its Context size)" if setting else
+                                                                                  " (as its router reports it)")
+    return ("the harnesses are told no context for it: llama.cpp's router does not report the context a loaded model "
+            "runs with (only with its memory accounting on), so one is told only where Context size is set (Change…, "
+            "for a server run here)")
 
 
 # -- the Models tab's own parts ---------------------------------------------------------------------------------------
@@ -714,7 +757,7 @@ def find_table(p, shown) -> dict:
             fits = "the other machine's GPU is not read from here"
         else:
             fits = (gpu.fit(f.size, gpus) if gpus is not None else "") or "–"
-        why = cannot or (GATED if f.gated else "")
+        why = (f"nothing to download: {f.where} says {f.why}" if f.absent else GATED if f.gated else "") or cannot
         values = {"name": shown.name if shown is not None else "", "model": f.model}
         rows.append([{"text": f.model, "sub": f.where + (f" · {f.why}" if f.why else "")},
                      size_words(f.size) if f.size else "not said", f.licence or "not said",

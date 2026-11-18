@@ -1,10 +1,12 @@
 """Models (models.py): a repository's files picked by llama.cpp's own rules (the quantization named, its defaults, a
 split file's parts, its projector, no importance matrix); Find a model at the Hub (found, unknown, no answer, a
 licence of its own, gated, paged through its Link header and never to another host, kept an hour and 12 at most,
-cleared); a download as a job (each refusal before its first line, nothing asked for them; its size and licence
-asked twice from what is kept alone; its progress; finished, failed, paused from elsewhere, cancelled and paused,
-a stream gone quiet, a router that stops answering); delete, load, unload and details with their refusals; each
-model's cells and the Find table, a button that does not apply disabled with its note."""
+cleared; the quantization typed kept; nothing offered where the Hub says there is nothing, a download unseen where
+it did not answer); a download as a job (each refusal before its first line, nothing asked for them, a server
+started offline among them; its size and licence asked twice from what is kept alone; its progress; finished,
+failed, paused from elsewhere, cancelled and paused, a stream gone quiet, a router that stops answering); delete,
+load, unload and details with their refusals (the context the harnesses are told); each model's cells and the Find
+table, a button that does not apply disabled with its note."""
 from __future__ import annotations
 
 import json
@@ -58,14 +60,26 @@ def hub(world, repo: str = REPO, card: dict | None = None, tree: list | None = N
                        (200, tree if tree is not None else load("hub-tree.json"), headers or {}), HUB)
 
 
-def serving_here(world, **settings):
+def serving_here(world, offline="off", **settings):
+    """A router run here and running, asked once by its Models tab (its kind and build kept): online unless asked,
+    so a download can go through it."""
     p = world.plugin("windows")
     world.installed(p)
-    local(p, **settings)
+    local(p, offline=offline, **settings)
     running(p, world)
     router(world)
-    p.models_of("default")  # the Models tab asked it: its kind and build are kept
+    p.models_of("default")
     return p
+
+
+def _download_bodies(world) -> list[dict]:
+    return [json.loads(b) for m, u, _, b in world.transport.asked if m == "POST" and u.endswith("/models")]
+
+
+def _find_row(p) -> list:
+    table = next(t for t in p.models()["tables"] if t["title"] == "Find a model")
+    [row] = table["rows"]
+    return row
 
 
 # -- llama.cpp's own way of picking files -----------------------------------------------------------------------------
@@ -119,10 +133,53 @@ def test_an_unknown_model_or_no_answer_is_kept_with_why(world):
     p = world.plugin("windows")
     said = p.find("someone/nothing-GGUF")
     assert not said["ok"] and "knows no such model, or it is private" in said["said"]
-    assert p.found_of("someone/nothing-GGUF").why
+    assert p.found_of("someone/nothing-GGUF").why and p.found_of("someone/nothing-GGUF").absent
     world.transport.on("GET", f"/api/models/{REPO}", ConnectionRefusedError("refused"), HUB)
     said = p.find(REPO)
-    assert not said["ok"] and "it did not answer" in said["said"]
+    assert not said["ok"] and "it did not answer" in said["said"] and not p.found_of(REPO).absent
+
+
+@pytest.mark.parametrize("answer", [(429, {"error": "Too many requests"}), ConnectionRefusedError("refused")])
+def test_a_hub_that_did_not_answer_keeps_the_quantization_typed_for_a_download_unseen(world, answer):
+    """The review: a lookup the Hub did not answer kept the repository alone, so a download unseen fetched llama.cpp's
+    default quantization instead of the one typed, and without its projector. Now it keeps what was typed, says it
+    would be downloaded unseen, and leaves the sidecars to the router (its default brings the projector)."""
+    p = serving_here(world)
+    world.transport.on("GET", "/api/models/bartowski/X-GGUF", answer, HUB)
+    said = p.find("bartowski/X-GGUF:q8_0")
+    found = p.found_of("bartowski/X-GGUF:Q8_0")
+    assert not said["ok"] and (found.model, found.asked) == ("bartowski/X-GGUF:Q8_0", "bartowski/X-GGUF:q8_0")
+    button = _find_row(p)[4]
+    assert button["values"]["model"] == "bartowski/X-GGUF:Q8_0" and not button.get("disabled")
+    asked = refusal(lambda: p.pull("default", button["values"]["model"]))
+    assert asked.accept == ACCEPT_LICENCE and "bartowski/X-GGUF:Q8_0's size or licence" in asked.args[0]
+    assert "it would be downloaded unseen" in asked.args[0]
+    world.transport.on("POST", "/models", (200, {"success": True}))
+    world.transport.on("GET", "/models/sse",
+                       lambda *a: sse({"model": "bartowski/X-GGUF:Q8_0", "event": "download_finished"}))
+    assert p.pull("default", button["values"]["model"], True, log=Panel())["ok"]
+    assert _download_bodies(world) == [{"model": "bartowski/X-GGUF:Q8_0"}]  # the router's own sidecars
+
+
+@pytest.mark.parametrize("typed, kept, why", [
+    ("bartowski/X-GGUF:Q8_0", "bartowski/X-GGUF:Q8_0", "knows no such model, or it is private"),
+    (REPO + ":Q2_K", REPO + ":Q2_K", f"{REPO} holds no GGUF file llama.cpp takes for Q2_K"),
+])
+def test_nothing_is_offered_for_download_where_the_hub_says_there_is_nothing(world, typed, kept, why):
+    """The review: a lookup the Hub answered with no such model (404), or a repository without the quantization
+    typed, still offered Download… "unseen", which fetched another file. Now nothing that was asked can be
+    downloaded: Download… is off with its why, and a download is refused in words, nothing asked."""
+    p = serving_here(world)
+    hub(world)  # (the repository llama.cpp's own picks are read from; another one is not known)
+    said = p.find(typed)
+    found = p.found_of(typed)
+    assert not said["ok"] and found.absent and found.model == kept and why in found.why
+    assert "Download… is off for it" in said["lines"][0]
+    button = _find_row(p)[4]
+    assert button["disabled"] and why in button["note"] and "nothing to download" in button["note"]
+    world.transport.asked.clear()
+    words = refusal(lambda: p.pull("default", kept, True)).args[0]
+    assert why in words and "nothing that was asked can be downloaded" in words and world.transport.asked == []
 
 
 def test_a_licence_of_its_own_and_a_gated_model_are_said(world):
@@ -185,10 +242,40 @@ def _events(*kinds, model=TARGET):
     return out
 
 
-def test_a_download_is_refused_before_its_first_line_from_what_is_kept_alone(world, monkeypatch):
+def test_a_download_is_refused_while_its_server_is_started_offline(world):
+    """The review's high finding, its Download… side: a router started offline (Offline on, the default) downloads
+    nothing, so Download… is off with its why, and a download is refused in words before its first line, nothing
+    asked; with Offline off (Change…, then started again), it goes through."""
     p = world.plugin("windows")
     world.installed(p)
     local(p)
+    running(p, world)
+    router(world)
+    p.models_of("default")
+    hub(world)
+    p.find(REPO)
+    world.transport.asked.clear()
+    words = refusal(lambda: p.pull("default", REPO, True)).args[0]
+    assert words.startswith("default is started offline (Offline is on in its settings)")
+    assert "turn Offline off with Change… while it is stopped, and start it again" in words
+    assert world.transport.asked == []
+    button = _find_row(p)[4]
+    assert button["disabled"] and button["note"] == words
+    p.stop("default")
+    world.probe.conns.clear()  # (it no longer listens)
+    world.clock.now += 6
+    p.change_instance("default", None, None, False, *[("off" if s.name == "offline" else None) for s in p.SETTINGS])
+    assert p.instance("default").settings["offline"] == "off"
+    assert "LLAMA_ARG_OFFLINE" not in p.prepared(p.instance("default")).env
+    running(p, world)
+    p.models_of("default")
+    assert not _find_row(p)[4].get("disabled")
+
+
+def test_a_download_is_refused_before_its_first_line_from_what_is_kept_alone(world, monkeypatch):
+    p = world.plugin("windows")
+    world.installed(p)
+    local(p, offline="off")
     hub(world)
     assert "start default first: llama.cpp downloads a model through its running server" in refusal(
         lambda: p.pull("default", REPO)).args[0]
@@ -354,6 +441,27 @@ def test_details_say_the_listing_and_the_loaded_models_props(world):
     assert any("is not loaded: its file, its context and its slots are said once it is" in x for x in said["lines"])
 
 
+def test_details_say_what_context_the_harnesses_are_told(world):
+    """The review: a router started here reports no loaded model's context, so the harnesses are told one only where
+    Context size is set; Details says which."""
+    p = serving_here(world)
+    props = {**load("router-props.json"), "default_generation_settings": {"n_ctx": 32768}}  # (the loaded model's)
+    world.transport.on("GET", "/props", (200, props, {"server": "llama.cpp"}))
+    lines = p.details("default", TARGET)["lines"]
+    assert "context: 32,768 tokens" in lines
+    told = next(x for x in lines if x.startswith("the harnesses are told"))
+    assert "no context for it" in told and "Context size" in told and "Change…" in told
+    p.stop("default")
+    world.probe.conns.clear()
+    world.clock.now += 6
+    p.change_instance("default", None, None, False,
+                      *[{"context": 16384, "offline": "off"}.get(s.name) for s in p.SETTINGS])
+    running(p, world)
+    p.models_of("default")
+    told = next(x for x in p.details("default", TARGET)["lines"] if x.startswith("the harnesses are told"))
+    assert told == "the harnesses are told its context is 16,384 tokens (its Context size)"
+
+
 # -- what the Models tab draws ---------------------------------------------------------------------------------------
 def test_each_models_cells_say_what_does_not_apply(world):
     p = serving_here(world)
@@ -372,7 +480,7 @@ def test_each_models_cells_say_what_does_not_apply(world):
 def test_the_find_table_is_drawn_whether_or_not_an_instance_answers(world):
     p = world.plugin("windows")
     world.installed(p)
-    local(p)
+    local(p, offline="off")
     hub(world)
     p.find(REPO)
     page = p.models()

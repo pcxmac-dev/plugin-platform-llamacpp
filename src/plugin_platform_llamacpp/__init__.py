@@ -23,8 +23,10 @@ plugins (the harnesses ask its `serving` through the platform: NATIVE "llamacpp"
   downloaded through the router as a job that can be cancelled, deleted, loaded, unloaded and described; Try it.
 
 Nothing is asked of a server while its page is not shown, nothing runs by itself, and nothing is sent anywhere
-unasked: llama.cpp has no telemetry and no update check, its remote access, tools, agent and MCP are never switched
-on here, and what still leaves the machine is said on the page (What leaves this machine).
+unasked: llama.cpp has no telemetry and no update check; a server started here is offline unless its Offline setting
+is off (online, each load of a model it downloaded asks the Hub first and may fetch a newer revision by itself); its
+remote access, tools, agent and MCP are never switched on here (--no-agent, and a start refused while a config.ini
+turns on what no switch turns off); and what still leaves the machine is said on the page (What leaves this machine).
 
     python -m plugin_platform_llamacpp status | serving | models NAME | launch NAME | find MODEL
     python -m plugin_platform_llamacpp install [--accept-licence]
@@ -92,6 +94,14 @@ SETTINGS = (
             note="the one used longest ago is unloaded for the next (--models-max)"),
     Setting("idle", "Unload after idle (seconds)", "number", default=300, min=0, max=86400,
             note="0: never (llama.cpp's own default); 300 frees the GPU when nothing asks (--sleep-idle-seconds)"),
+    # (the review of 0.1.0: started online, each load of a model it downloaded asks the Hub and may fetch a newer
+    # revision by itself; offline, its router downloads nothing either)
+    Setting("offline", "Offline", "choice", default="on",
+            choices=(("on", "On", "it asks huggingface.co nothing: a model it downloaded loads from its folder as it "
+                                  "is, and Download… is off"),
+                     ("off", "Off", "Download… works; and each load of a model it downloaded asks huggingface.co "
+                                    "first and fetches a newer revision of it by itself")),
+            note="LLAMA_ARG_OFFLINE: on (the default), nothing is asked of huggingface.co; read when it starts"),
 )
 
 

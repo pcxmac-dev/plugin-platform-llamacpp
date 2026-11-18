@@ -6,20 +6,22 @@ naming it; the archives hang on the pre-release b12359). Each archive is pinned 
 sha256 as the release's own metadata gives them (GitHub's release API: each asset's size and digest; the build's
 attestation repeats all 38 sums), read on 2026-11-16 without downloading anything, and fetch checks both before the
 file gets its name. Downloaded from github.com, which sends each file on to release-assets.githubusercontent.com (all
-twelve were seen so); objects.githubusercontent.com, GitHub's earlier host for release files, is allowed too though
-none was sent there: the pinned sum checks a file whichever of GitHub's hosts serves it.
+twelve were seen so), the one host a redirect may send it on to: any other (objects.githubusercontent.com, GitHub's
+earlier host, seen for none) is refused in words, nothing asked of it (the review of 0.1.0).
 
 The build is the user's choice (the hook `build`, kept through the Login): automatic, CUDA 13, CUDA 12, Vulkan or the
-processor's. Automatic is settled inside the install's job, where nvidia-smi may run (never for a status):
+processor's. Automatic is settled inside the install's job, where nvidia-smi may run (never for a status). The
+figures review's findings are numbered from 1, as review/fix-figures.json lists them:
 
 - no NVIDIA GPU read: the Vulkan build, under WSL the processor's (llama.cpp's makers say nothing of Vulkan there);
 - a driver of CUDA 13.5's own branch, R620, or newer: the CUDA 13 build (A-revisions M9: the conservative pick below
-  that branch is CUDA 12; figures' finding 12: the threshold is the branch, 620);
+  that branch is CUDA 12; the figures review's finding 13: the threshold is the branch, 620);
 - below it, on Windows, a card of compute capability 12 (an RTX 50, Blackwell): the CUDA 12.4 build carries no code
   of its own for it (ggml's architectures for a toolkit before 12.8 end at 8.9 and 9.0's PTX), so the CUDA 13.5 build
-  from driver 580 on, NVIDIA's minor version compatibility, else the Vulkan build (figures' finding 13);
+  from driver 580 on, NVIDIA's minor version compatibility, else the Vulkan build (finding 14);
 - else the CUDA 12 build from driver 525 on (NVIDIA's minor version compatibility for any 12.x, on both systems:
-  finding 12 asked for one meaning), else the Vulkan build.
+  finding 13 asked for one meaning, its caveat said: what is new in the build's own CUDA 12 release may be refused by
+  a driver older than that release's own), else the Vulkan build, under WSL the processor's.
 
 The job's first line says which and why; once unpacked, `llama-server --version` must say build 12359 and its
 `--list-devices` lines are logged and kept with the install: a CUDA build that lists no CUDA device is kept and said.
@@ -55,9 +57,9 @@ BUILD_NUMBER = 12359
 TAG_DAY = "2026-11-13"  # when b12359 was published
 RELEASE = "https://github.com/ggml-org/llama.cpp/releases/download/" + BUILD + "/"
 HOSTS = ("github.com", "release-assets.githubusercontent.com")  # what the page names: where a download comes from
-# where github.com may send a release file on to (download.Source.hosts): the one seen for all twelve archives, and
-# GitHub's earlier host for release files, seen for none (the pinned sum checks a file whichever host serves it)
-ASSET_HOSTS = ("release-assets.githubusercontent.com", "objects.githubusercontent.com")
+# where github.com may send a release file on to (download.Source.hosts): the one the figures saw for all twelve
+# archives, alone (a redirect anywhere else is refused in words, as A-inference 10 asks: never worked around)
+ASSET_HOSTS = ("release-assets.githubusercontent.com",)
 HUB = "https://huggingface.co"  # the Hugging Face Hub: a model's files, size and licence, asked on the user's click
 ROUTER_FROM = 7218  # the first build that serves without a model: a router (PR 17470)
 MODELS_FROM = 9688  # the first whose router downloads, deletes and tells of models over its API (PR 23976)
@@ -65,7 +67,11 @@ PORT_FROM = 11521  # the first build listening on 9931 by default (8080 before i
 CUDA13_DRIVER = 620  # CUDA 13.5's own driver branch, R620: the CUDA 13 build is chosen from it on (A-revisions M9)
 MINOR13_DRIVER = 580  # NVIDIA's lowest driver for any CUDA 13.x (minor version compatibility)
 CUDA12_DRIVER = 525  # NVIDIA's lowest driver for any CUDA 12.x (minor version compatibility), on both systems
-NEW_CARDS = 12  # a compute capability from this major on has no code in the Windows CUDA 12.4 build (finding 13)
+# each CUDA 12 build's own toolkit's driver (NVIDIA's release notes, Table 4; figures S7): what is new in it may be
+# refused below this (NVIDIA's caveat: cudaErrorCallRequiresNewerDriver). Windows' is made with 12.4 Update 1; Linux's
+# with 12.8.2, for which NVIDIA gives no row: 12.8 Update 1's
+CUDA12_OWN = {"windows": ("551.78", "CUDA 12.4 Update 1's own"), "linux": ("570.124.06", "CUDA 12.8 Update 1's own")}
+NEW_CARDS = 12  # a compute capability from this major on has no code in the Windows CUDA 12.4 build (finding 14)
 NEED_FREE = 3 << 30  # free on the plugin's disk before an install: the largest build is 757 MB, unpacked about twice
 LIST_S = 30.0  # what `--list-devices` is given: it loads the GPU's libraries
 PULL_S = 21600.0  # a model's download is followed six hours at most, then paused (its part kept)
@@ -269,6 +275,12 @@ def build_words(system: str, which: str) -> str:
     return words
 
 
+def caveat12(system: str) -> str:
+    """NVIDIA's caveat for a CUDA 12 build run by minor version compatibility, in words."""
+    own, whose = CUDA12_OWN[system]
+    return f"what is new in CUDA {CUDA[system]['cuda12']} may be refused by a driver older than {own} ({whose})"
+
+
 def automatic_words(p) -> str:
     """What automatic brings, every case named with its size: settled as it installs, by what nvidia-smi reads then."""
     system, wsl = p.system, bool(p.wsl)
@@ -278,10 +290,12 @@ def automatic_words(p) -> str:
                                                f"{NEW_CARDS} (an RTX 50)" if system == "windows" else "")
              + f" ({size_words(bytes_of(system, 'cuda13'))})",
              f"its CUDA 12 build with NVIDIA's CUDA {cuda12} runtime where the driver is older, from "
-             f"{CUDA12_DRIVER} on ({size_words(bytes_of(system, 'cuda12'))})"]
+             f"{CUDA12_DRIVER} on ({size_words(bytes_of(system, 'cuda12'))}; by NVIDIA's minor version compatibility: "
+             f"{caveat12(system)})"]
     if system == "linux" and wsl:
-        cases.append(f"its processor's build where none is read ({size_words(bytes_of(system, 'cpu'))}): llama.cpp's "
-                     "makers say nothing of its Vulkan build inside WSL")
+        cases.append(f"its processor's build where none is read, or the driver is older than {CUDA12_DRIVER} "
+                     f"({size_words(bytes_of(system, 'cpu'))}): llama.cpp's makers say nothing of its Vulkan build "
+                     "inside WSL")
     else:
         vulkan = size_words(bytes_of(system, "vulkan"))
         cases.append(f"its Vulkan build where none is read, or the driver is older ({vulkan})")
@@ -505,7 +519,10 @@ def settle(p) -> tuple[str, str]:
     if not driver or driver >= (CUDA12_DRIVER,):
         return "cuda12", (f"{named}, older than CUDA 13.5's own branch (R{CUDA13_DRIVER}): the CUDA 12 build (CUDA "
                           f"{cuda12}), which NVIDIA's minor version compatibility runs on drivers from "
-                          f"{CUDA12_DRIVER} on")
+                          f"{CUDA12_DRIVER} on ({caveat12(p.system)})")
+    if p.system == "linux" and p.wsl:
+        return "cpu", (f"{named}, older than {CUDA12_DRIVER}, the oldest CUDA 12 runs on, and llama.cpp's makers say "
+                       "nothing of its Vulkan build inside WSL: the processor's build")
     return "vulkan", f"{named}, older than {CUDA12_DRIVER}, the oldest CUDA 12 runs on: the Vulkan build"
 
 
@@ -580,6 +597,8 @@ def install_into(p, log, cancel) -> list[str]:
     if cancel():
         raise Cancelled("cancelled")
     line, devices, notes = check_program(p, exe, which)
+    if cancel():  # (pressed while it ran, up to 10 s and 30 s: nothing is in use yet, so nothing is put in use)
+        raise Cancelled("cancelled")
     say(f"{exe.name} says: {line}")
     for device in devices or ["no GPU (it runs on the processor)"]:
         say(f"it sees {device}")
@@ -693,7 +712,8 @@ def brings_table(p) -> dict | None:
         download_ = ["Download", size_words(bytes_of(system, which)), f"from {' and '.join(HOSTS)}. {CHECKED}"]
     needs = (f"a CUDA build: an NVIDIA GPU and its driver ({CUDA13_DRIVER} or newer for CUDA 13"
              + (f", {MINOR13_DRIVER} for a card of compute capability {NEW_CARDS}" if system == "windows" else "")
-             + f"; {CUDA12_DRIVER} or newer for CUDA 12); Vulkan: a GPU with a Vulkan driver, else the processor")
+             + f"; {CUDA12_DRIVER} or newer for CUDA 12, by NVIDIA's minor version compatibility: {caveat12(system)}); "
+             "Vulkan: a GPU with a Vulkan driver, else the processor")
     needs += ("; and Microsoft's Visual C++ runtime (x64)" if system == "windows"
               else "; and OpenSSL 3 with glibc 2.35 (2.39 for the CUDA builds)")
     rows = [build, download_, ["Needs", "", needs]]

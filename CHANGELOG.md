@@ -12,18 +12,23 @@ API 2.2 on liminal-libs 1.62.0's model server base, under the AI heading's Infer
 
 - **Install, update, uninstall**: llama.cpp 1.0.0 (build b12359), its build chosen on the page or settled as it
   installs by what nvidia-smi reads (CUDA 13 from driver R620, or from 580 for a card of compute capability 12 on
-  Windows; CUDA 12 from 525; else Vulkan, under WSL the processor's), every archive pinned by name, size and sha256
-  and checked, unpacked into the plugin's own folder, its program run to say build 12359 and its devices before it is
-  put in use. An install found on PATH is your own, never replaced.
+  Windows; CUDA 12 from 525, NVIDIA's caveat said; else Vulkan, under WSL the processor's), every archive pinned by
+  name, size and sha256 and checked, taken from GitHub's one storage host the figures saw, unpacked into the plugin's
+  own folder, its program run to say build 12359 and its devices before it is put in use (a Cancel meanwhile
+  honoured). An install found on PATH is your own, never replaced. The command line's `install` says the size, the
+  hosts and the licence before it asks for `--accept-licence`.
 - **Instances**: a server run here (always a router, bound to this machine unless shared, its port its own, no other
-  site's page allowed to read it, llama.cpp's own variables dropped, its key by environment alone), one found here, or
-  another machine's; Start, Stop, At boot, Share, Key and the conflicts as the base gives them.
+  site's page allowed to read it, offline unless its Offline setting is off, `--no-agent`, llama.cpp's own variables
+  and the others it reads dropped, its key by environment alone, refused while a config.ini turns on remote access or
+  MCP servers), one found here, or another machine's; Start, Stop, At boot, Share, Key and the conflicts as the base
+  gives them.
 - **Models**: Find a model at the Hugging Face Hub (its files picked by llama.cpp's own rules, their size and licence
-  and what fits this GPU said first), Download… as a job through the router (asked twice, Cancel pauses it), Delete…,
-  Load…, Unload…, Details, Try it.
-- **What leaves this machine**, said on the page: no telemetry, no update check; downloads on your click; and the
-  Hub asked for a downloaded model's files each time it is loaded (llama.cpp's own way, with no switch that keeps it
-  off while its downloads work).
+  and what fits this GPU said first; the quantization typed kept, nothing offered where the Hub says there is nothing
+  to download), Download… as a job through a router started online (asked twice, Cancel pauses it), Delete…, Load…,
+  Unload…, Details (the context the harnesses are told among it), Try it.
+- **What leaves this machine**, said on the page: no telemetry, no update check; a server started here asks
+  huggingface.co nothing unless its Offline setting is off (online, llama.cpp asks the Hub at each load of a model it
+  downloaded and fetches a newer revision by itself); downloads on your click.
 - Six API cards (llama-server's API, the command, the releases, the Hugging Face Hub API, nvidia-smi, Start at
   sign-in), `api_facts()`, `READ_HOOKS` and `KEEPS` for the Internal API tab, a command line, and tests over stand-ins
   for everything outside.

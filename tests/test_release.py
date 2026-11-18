@@ -1,11 +1,12 @@
 """What Install brings and what is installed (release.py): the pins as the release's metadata gives them; package()
 on each system and for each build (automatic naming every case); installed() for this plugin's install, a found
 llama-server, a found llama and none, files looked at only; Read again reading a found install's build and devices;
-the build automatic settles from what nvidia-smi reads (the figures' findings 12 and 13); the install as a job:
-fetched through github.com's redirect, checked, unpacked (Linux's top folders stripped), its program run to say its
-build, recorded, put in use and its archives removed; its refusals before the first line (Windows' C runtime, the
-disk, the licence) and its failures (a wrong sum, another build, a program that does not start, a cancel); the
-uninstall inside the plugin's folder alone; the build kept through the login."""
+the build automatic settles from what nvidia-smi reads (the figures review's findings 13 and 14, numbered from 1),
+NVIDIA's caveat said for CUDA 12; the install as a job: fetched through github.com's redirect to its one storage host
+(another refused), checked, unpacked (Linux's top folders stripped), its program run to say its build, recorded, put
+in use and its archives removed; its refusals before the first line (Windows' C runtime, the disk, the licence) and
+its failures (a wrong sum, another build, a program that does not start, a cancel, one while its program is checked);
+the uninstall inside the plugin's folder alone; the build kept through the login."""
 from __future__ import annotations
 
 import json
@@ -15,7 +16,7 @@ import threading
 import pytest
 
 from liminal_libs.instances import Refusal
-from liminal_libs.machines.ai import ACCEPT_LICENCE
+from liminal_libs.machines.ai import ACCEPT_LICENCE, CANCELLED
 from liminal_libs.machines.children import ChildError
 
 from plugin_platform_llamacpp import release
@@ -63,8 +64,8 @@ def test_every_build_is_pinned_by_name_size_and_sha256_from_github():
             source = part.source()
             assert source.url == release.RELEASE + part.name and source.url.startswith("https://github.com/")
             assert (source.size, source.sha256) == (part.size, part.sha256)
-            assert source.hosts == ("release-assets.githubusercontent.com", "objects.githubusercontent.com")
-    # the sizes as bytes (finding 31: the plan's "MB" were MiB)
+            assert source.hosts == ("release-assets.githubusercontent.com",)  # the one the figures saw, for all 12
+    # the sizes as bytes (the figures review's finding 32: the plan's "MB" were MiB)
     assert release.bytes_of("windows", "cuda13") == 605_860_311 and release.bytes_of("linux", "cuda12") == 793_594_941
     assert release.BUILDS[("windows", "cuda13")][1].name == "cudart-llama-bin-win-cuda-13.5-x64.zip"  # no tag
     assert release.BUILDS[("linux", "cuda12")][1].name == "cudart-llama-b12359-bin-ubuntu-cuda-12.8-x64.tar.gz"
@@ -91,7 +92,8 @@ def test_package_brings_the_build_kept_and_automatic_names_every_case(world):
 def test_linux_under_wsl_brings_the_processors_build_where_no_gpu_is_read(world):
     p = world.plugin("linux", wsl="Ubuntu")
     pkg = p.package()
-    assert "its processor's build where none is read (22.2 MB)" in pkg.parts and "inside WSL" in pkg.parts
+    assert "its processor's build where none is read, or the driver is older than 525 (22.2 MB)" in pkg.parts
+    assert "inside WSL" in pkg.parts
     assert "its Vulkan build where none is read" not in pkg.parts  # not a case inside WSL
     assert pkg.size == release.bytes_of("linux", "cuda12") == 793_594_941
 
@@ -168,6 +170,7 @@ def test_a_build_is_read_leniently_by_its_number(text, build):
     ("windows", "", None, "vulkan", "no NVIDIA GPU is read here"),
     ("linux", GPU_5090, "0, 12.0\n", "cuda12", "CUDA 12.8"),
     ("linux", "0, NVIDIA L4, 23034, 0, 23034, 620.10\n", "0, 8.9\n", "cuda13", "R620"),
+    ("linux", "0, NVIDIA GeForce GTX 1080, 8192, 0, 8192, 516.94\n", "0, 6.1\n", "vulkan", "older than 525"),
 ])
 def test_automatic_settles_the_build_by_what_nvidia_smi_reads(world, system, gpu, caps, which, words):
     world.runner.gpu, world.runner.caps = gpu, caps
@@ -180,6 +183,32 @@ def test_under_wsl_with_no_gpu_automatic_brings_the_processors_build(world):
     world.runner.gpu = ""
     p = world.plugin("linux", wsl="Ubuntu")
     assert release.settle(p)[0] == "cpu" and not any("compute_cap" in " ".join(r) for r in world.runner.ran)
+
+
+def test_under_wsl_a_driver_too_old_for_cuda_12_brings_the_processors_build_as_its_words_say(world):
+    """The review: under WSL an NVIDIA card whose driver is older than 525 got the Vulkan build, though the words
+    name no Vulkan case inside WSL; it gets the processor's, and the words name that case."""
+    world.runner.gpu = "0, NVIDIA GeForce GTX 1080, 8192, 0, 8192, 516.94\n"
+    p = world.plugin("linux", wsl="Ubuntu")
+    which, why = release.settle(p)
+    assert which == "cpu" and "older than 525" in why and "inside WSL" in why, why
+    words = release.automatic_words(p)
+    assert "its processor's build where none is read, or the driver is older than 525" in words
+    assert "Vulkan build where" not in words
+
+
+@pytest.mark.parametrize("system, own", [("windows", "CUDA 12.4 may be refused by a driver older than 551.78"),
+                                         ("linux", "CUDA 12.8 may be refused by a driver older than 570.124.06")])
+def test_cuda_12_from_driver_525_says_nvidias_caveat(world, system, own):
+    """The review: CUDA 12 from 525 rests on NVIDIA's minor version compatibility, whose caveat was said only for the
+    CUDA 13 case: the job's line, Automatic's words and the Needs row say it for CUDA 12 too."""
+    world.runner.gpu, world.runner.caps = "0, NVIDIA GeForce RTX 4090, 24564, 0, 24564, 530.30\n", "0, 8.9\n"
+    p = world.plugin(system)
+    which, why = release.settle(p)
+    assert which == "cuda12" and own in why, why
+    assert own in release.automatic_words(p)
+    needs = {r[0]: r for r in release.brings_table(p)["rows"]}["Needs"][2]
+    assert own in needs, needs
 
 
 def test_a_compute_capability_that_cannot_be_read_falls_back_to_the_drivers_rule(world):
@@ -279,8 +308,41 @@ def test_a_program_that_does_not_start_is_said_with_its_likely_cause(world, monk
 def test_a_cancel_keeps_what_came_and_installs_nothing(world, monkeypatch):
     p, parts = _installs(world, monkeypatch, "windows", "cuda13")
     said = p.install(True, log=Panel(cancel_after=f"{parts[1].name} ("))
-    assert not said["ok"] and said["said"].startswith("cancelled: nothing was installed")
-    assert p.current() is None
+    assert not said["ok"] and said["said"] == CANCELLED  # "what was downloaded is kept for the next try"
+    assert p.current() is None and not (p.home / "app" / "b12359-cuda13").exists()
+    kept = p.home / "downloads" / "b12359" / parts[0].name  # the first archive, whole, for the next try
+    assert kept.is_file() and kept.stat().st_size == parts[0].size
+    assert not (p.home / "downloads" / "b12359" / parts[1].name).exists()
+
+
+def test_a_cancel_while_the_program_is_checked_installs_nothing(world, monkeypatch):
+    """The review: a Cancel pressed while the unpacked llama-server is run (--version, --list-devices) was not
+    honoured: the install was put in use and answered as installed. It is now answered as cancelled, nothing in use,
+    the half-built folder removed and the archives kept."""
+    p, parts = _installs(world, monkeypatch, "windows", "vulkan")
+    panel = Panel()
+    real = world.runner.__call__
+
+    def runner(args, timeout):
+        if "--version" in args:
+            panel.cancel()  # the user presses Cancel while llama-server --version runs
+        return real(args, timeout)
+    p.out.runner = runner
+    said = p.install(True, log=panel)
+    assert not said["ok"] and said["said"].startswith("cancelled: nothing was installed"), said
+    assert p.current() is None and p.installed() is None and not (p.home / "app" / "b12359-vulkan").exists()
+    assert (p.home / "downloads" / "b12359" / parts[0].name).is_file()
+
+
+def test_a_redirect_to_a_host_the_figures_did_not_see_is_refused_in_words(world, monkeypatch):
+    """The review: ASSET_HOSTS allowed objects.githubusercontent.com, which the figures saw for none of the twelve
+    archives and the install's words do not name. A redirect there is refused, nothing asked of it."""
+    p, parts = _installs(world, monkeypatch, "windows", "vulkan")
+    world.opener.storage = "objects.githubusercontent.com"
+    said = p.install(True, log=Panel())
+    assert not said["ok"] and "was sent on to https://objects.githubusercontent.com," in said["said"], said
+    assert "release-assets.githubusercontent.com alone: nothing was asked of it" in said["said"]
+    assert [u.split("/")[2] for u in world.opener.asked] == ["github.com"] and p.current() is None
 
 
 def test_windows_without_its_c_runtime_and_a_full_disk_are_refused_before_the_job(world, monkeypatch):

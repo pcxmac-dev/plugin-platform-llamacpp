@@ -80,5 +80,6 @@ def test_every_host_the_package_names_is_on_a_card_or_pinned():
 
 @pytest.mark.skipif(os.environ.get("LIMINAL_VENDOR_PAGES") != "1",
                     reason="reaches the makers' pages: LIMINAL_VENDOR_PAGES=1")
-def test_the_cards_pages_answer():
+def test_the_cards_pages_answer(monkeypatch):
+    monkeypatch.undo()  # this test alone reaches the network (the autouse guard refuses it to every other)
     assert dead_links(cards.APIS) == []

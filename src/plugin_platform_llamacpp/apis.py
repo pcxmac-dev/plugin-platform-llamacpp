@@ -113,9 +113,12 @@ COMMAND = Api(
     about=("llama-server started as a program: every setting an argument, most with an LLAMA_ARG_ variable beside "
            "it, a machine's or a user's config.ini read first. The plugin starts a server of an instance run here as "
            "a router (no model), windowless, as a child it owns (Ctrl+C ends it on Windows, SIGTERM on Linux), with "
-           "its bind address, port, models' limits, context, GPU layers and GGUF folder on its command line and its "
-           "downloads' folder, one origin and key in its environment; it reads an install's build and devices by "
-           "running it once. --connect, --tools, --agent, MCP, --metrics and the prompt logs are never given."),
+           "its bind address, port, models' limits, --no-agent, context, GPU layers and GGUF folder on its command "
+           "line and its downloads' folder, one origin, LLAMA_ARG_OFFLINE=1 (unless the instance's Offline setting "
+           "is off) and its key in its environment; the router hands them on to the model programs it starts. It "
+           "reads an install's build and devices by running it once. --connect, --tools, --agent, MCP, --metrics "
+           "and the prompt logs are never given, and a start is refused while a config.ini turns on remote access "
+           "or MCP servers."),
     kind="command",
     base="llama-server (this plugin's install in app/<pin>, or yours on PATH: llama-server, or llama serve)",
     version=f"llama.cpp {release.VERSION}, build {release.BUILD}",
@@ -134,16 +137,18 @@ COMMAND = Api(
         Area("Its version and devices", "--version (its build), --list-devices (the GPUs it sees)",
              SERVER_DOCS + "#common-params", covered="an install's check, and Read again of a found one"),
         Area("Configuration files", "a machine's and a user's config.ini, read at every start",
-             TAG + "docs/preset.md", covered="said where one exists (What leaves this machine); never written"),
+             TAG + "docs/preset.md", covered="read and said where one exists (What leaves this machine), a start "
+                                             "refused while one turns on remote access or MCP servers; never written"),
         Area("Its own downloads and updates", "llama download, llama update, -hf at the command line",
              TAG + "docs/install.md"),
         Area("Remote access and tools", "--connect (a peer-to-peer tunnel), --tools, --agent, MCP servers",
              SERVER_DOCS + "#server-specific-params"),
     ),
     calls=(
-        Call("llama-server --host <address> --port <port> --models-max <n> [--sleep-idle-seconds <s>] [-c <n>] "
-             "[-ngl <n>] [--models-dir <folder>]", "a router, its environment LLAMA_CACHE, LLAMA_ARG_CORS_ORIGINS and "
-             "LLAMA_API_KEY", "Serving", used="Start (a click's, or its task's or unit's at sign-in)"),
+        Call("llama-server --host <address> --port <port> --models-max <n> --no-agent [--sleep-idle-seconds <s>] "
+             "[-c <n>] [-ngl <n>] [--models-dir <folder>]", "a router, its environment LLAMA_CACHE, "
+             "LLAMA_ARG_CORS_ORIGINS, LLAMA_ARG_OFFLINE (Offline on) and LLAMA_API_KEY", "Serving",
+             used="Start (a click's, or its task's or unit's at sign-in)"),
         Call("llama serve <the same arguments>", "the same router from llama.cpp's one program", "Serving",
              used="Start, where your install is the one program `llama`"),
         Call("llama-server --version", "its build, on its standard error", "Its version and devices",
@@ -216,8 +221,9 @@ HUB_API = Api(
            "without a token, for a model's card (whether it is gated, its licence) and its files with their sizes, "
            "picks the files llama.cpp would download by its own rules, and says their size, licence and what fits "
            "this machine's GPU before any download. A download itself is the server's: its router asks the Hub and "
-           "fetches the files, and asks the Hub for a repository's list of files again each time it loads a model "
-           "it downloaded."),
+           "fetches the files. Started online (an instance's Offline setting off), it also asks the Hub for a "
+           "repository's list of files each time it loads a model it downloaded, and fetches a newer revision by "
+           "itself; started offline, the default here, it asks the Hub nothing."),
     kind="rest",
     base=release.HUB,
     version="the Hub's API as its OpenAPI document describes it (the model card's address is its own client's)",

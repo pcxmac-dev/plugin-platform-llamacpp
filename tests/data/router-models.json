@@ -35,18 +35,6 @@
     "n_ctx_train": 131072,
     "size": 2489757856,
     "n_params": 3880263168
-   },
-   "memory": {
-    "n_ctx": 32768,
-    "devices": [
-     {
-      "kind": "device",
-      "name": "CUDA0",
-      "total": 25651314688,
-      "free": 20000000000,
-      "model": 2489757856
-     }
-    ]
    }
   },
   {

@@ -454,10 +454,10 @@ def world(tmp_path, boot):
     return World(tmp_path, boot)
 
 
-def local(p, name: str = "default", **settings) -> None:
-    """A local instance added as the page adds one (settings by name)."""
+def local(p, name: str = "default", port=None, **settings) -> None:
+    """A local instance added as the page adds one (its port, then its settings by name)."""
     values = [settings.get(s.name) for s in p.SETTINGS]
-    p.add_instance(name, "local", None, None, False, *values)
+    p.add_instance(name, "local", None, port, False, *values)
 
 
 def running(p, world, name: str = "default") -> None:
