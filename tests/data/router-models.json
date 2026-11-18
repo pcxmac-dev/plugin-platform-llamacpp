@@ -1,0 +1,151 @@
+{
+ "object": "list",
+ "data": [
+  {
+   "id": "ggml-org/gemma-3-4b-it-GGUF:Q4_K_M",
+   "aliases": [],
+   "tags": [],
+   "object": "model",
+   "owned_by": "llamacpp",
+   "created": 1763400000,
+   "status": {
+    "value": "loaded",
+    "args": [
+     "llama-server",
+     "--port",
+     "51001"
+    ]
+   },
+   "architecture": {
+    "input_modalities": [
+     "text",
+     "image"
+    ],
+    "output_modalities": [
+     "text"
+    ]
+   },
+   "source": "cache",
+   "can_remove": true,
+   "context_length": 131072,
+   "sidecars": [
+    "mmproj"
+   ],
+   "meta": {
+    "n_ctx_train": 131072,
+    "size": 2489757856,
+    "n_params": 3880263168
+   },
+   "memory": {
+    "n_ctx": 32768,
+    "devices": [
+     {
+      "kind": "device",
+      "name": "CUDA0",
+      "total": 25651314688,
+      "free": 20000000000,
+      "model": 2489757856
+     }
+    ]
+   }
+  },
+  {
+   "id": "ggml-org/Qwen3-8B-GGUF:Q4_K_M",
+   "aliases": [],
+   "tags": [],
+   "object": "model",
+   "owned_by": "llamacpp",
+   "created": 1763400000,
+   "status": {
+    "value": "unloaded",
+    "args": []
+   },
+   "architecture": {
+    "input_modalities": [
+     "text"
+    ],
+    "output_modalities": [
+     "text"
+    ]
+   },
+   "source": "cache",
+   "can_remove": true,
+   "context_length": 40960,
+   "sidecars": []
+  },
+  {
+   "id": "my-coder-Q5_K_M",
+   "aliases": [],
+   "tags": [],
+   "object": "model",
+   "owned_by": "llamacpp",
+   "created": 1763400000,
+   "status": {
+    "value": "unloaded",
+    "args": []
+   },
+   "architecture": {
+    "input_modalities": [
+     "text"
+    ],
+    "output_modalities": [
+     "text"
+    ]
+   },
+   "source": "models_dir",
+   "can_remove": false,
+   "context_length": 16384
+  },
+  {
+   "id": "unsloth/Qwen3-30B-A3B-GGUF:Q4_K_M",
+   "aliases": [],
+   "tags": [],
+   "object": "model",
+   "owned_by": "llamacpp",
+   "created": 1763400000,
+   "status": {
+    "value": "downloading",
+    "progress": {
+     "https://huggingface.co/x.gguf": {
+      "done": 9000000000,
+      "total": 18000000000
+     }
+    }
+   },
+   "architecture": {
+    "input_modalities": [
+     "text"
+    ],
+    "output_modalities": [
+     "text"
+    ]
+   },
+   "source": "cache",
+   "can_remove": true,
+   "sidecars": []
+  },
+  {
+   "id": "bartowski/Mistral-7B-GGUF:Q8_0",
+   "aliases": [],
+   "tags": [],
+   "object": "model",
+   "owned_by": "llamacpp",
+   "created": 1763400000,
+   "status": {
+    "value": "incomplete",
+    "args": []
+   },
+   "architecture": {
+    "input_modalities": [
+     "text"
+    ],
+    "output_modalities": [
+     "text"
+    ]
+   },
+   "source": "cache",
+   "can_remove": true,
+   "sidecars": []
+  }
+ ]
+}

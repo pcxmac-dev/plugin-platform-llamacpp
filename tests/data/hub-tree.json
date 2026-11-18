@@ -1,0 +1,69 @@
+[
+ {
+  "type": "file",
+  "oid": "a1",
+  "size": 1520,
+  "path": "README.md"
+ },
+ {
+  "type": "file",
+  "oid": "b2",
+  "size": 2489757856,
+  "path": "gemma-3-4b-it-Q4_K_M.gguf",
+  "lfs": {
+   "oid": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+   "size": 2489757856,
+   "pointerSize": 135
+  }
+ },
+ {
+  "type": "file",
+  "oid": "d4",
+  "size": 4130401056,
+  "path": "gemma-3-4b-it-Q8_0.gguf",
+  "lfs": {
+   "oid": "e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5",
+   "size": 4130401056,
+   "pointerSize": 135
+  }
+ },
+ {
+  "type": "file",
+  "oid": "f6",
+  "size": 7767803680,
+  "path": "gemma-3-4b-it-f16.gguf",
+  "lfs": {
+   "oid": "a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7",
+   "size": 7767803680,
+   "pointerSize": 135
+  }
+ },
+ {
+  "type": "file",
+  "oid": "b8",
+  "size": 851251104,
+  "path": "mmproj-model-f16.gguf",
+  "lfs": {
+   "oid": "c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+   "size": 851251104,
+   "pointerSize": 135
+  }
+ },
+ {
+  "type": "file",
+  "oid": "d0",
+  "size": 4000000,
+  "path": "imatrix.gguf",
+  "lfs": {
+   "oid": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1",
+   "size": 4000000,
+   "pointerSize": 135
+  }
+ },
+ {
+  "type": "directory",
+  "oid": "f2",
+  "size": 0,
+  "path": "extra"
+ }
+]

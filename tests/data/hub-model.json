@@ -1,0 +1,28 @@
+{
+ "_id": "67b0",
+ "id": "ggml-org/gemma-3-4b-it-GGUF",
+ "author": "ggml-org",
+ "gated": false,
+ "private": false,
+ "tags": [
+  "gguf",
+  "image-text-to-text",
+  "license:gemma",
+  "region:us"
+ ],
+ "cardData": {
+  "license": "gemma",
+  "license_link": "https://ai.google.dev/gemma/terms",
+  "base_model": [
+   "google/gemma-3-4b-it"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": "README.md"
+  },
+  {
+   "rfilename": "gemma-3-4b-it-Q4_K_M.gguf"
+  }
+ ]
+}

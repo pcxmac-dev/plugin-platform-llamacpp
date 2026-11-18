@@ -1,0 +1,15 @@
+{
+ "model_path": "C:/models/coder-Q4_K_M.gguf",
+ "model_alias": "coder",
+ "total_slots": 4,
+ "default_generation_settings": {
+  "n_ctx": 8192,
+  "params": {}
+ },
+ "build_info": "b9000-a1b2c3d",
+ "modalities": {
+  "vision": false,
+  "audio": false
+ },
+ "is_sleeping": false
+}

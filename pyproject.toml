@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plugin-platform-llamacpp"
+version = "0.1.0"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
+description = "llama.cpp for Liminal: llama.cpp's server installed, started and stopped on this machine as a router, found here or reached on another machine, its GGUF models looked up, downloaded, loaded and asked."
+readme = "README.md"
+requires-python = ">=3.10"
+# the library it plugs into: the AI plugins' bases of liminal-libs 1.62.0 (machines/ai.py, machines/modelserver.py:
+# instances kept through the Login, a windowless child it owns, ports and their conflicts, start at boot, a model
+# server asked over http, a download as a job, nvidia-smi read), and icons.js with llama.cpp's mark
+dependencies = ["liminal-libs>=1.62.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."liminal.providers"]
+llamacpp = "plugin_platform_llamacpp"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

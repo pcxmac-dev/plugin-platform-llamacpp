@@ -1,0 +1,16 @@
+{
+ "object": "list",
+ "data": [
+  {
+   "id": "coder",
+   "object": "model",
+   "owned_by": "llamacpp",
+   "created": 1763400000,
+   "meta": {
+    "n_ctx_train": 32768,
+    "size": 4920000000,
+    "n_params": 7600000000
+   }
+  }
+ ]
+}
