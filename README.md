@@ -153,6 +153,15 @@ not whole left out: a harness is never offered one the router would refuse). Its
 each instance's key as its own pair, the build). A refusal that a second confirmation accepts names its argument
 (`accept`), and the page asks again before sending it.
 
+Who may ask them (0.1.1; the sweep after the independent review's finding PLT-H1, 2026-11-25): its own changes, `pull`,
+`delete_model`, `load`, `unload` and `build`, are the plugin's `PAGE_ONLY_HOOKS` (liminal-libs 1.66.0's word). Another
+plugin's ask of one is refused, and liminal-platform 0.34.0 refuses one over HTTP unless its login shows that you are
+at the page. Before, any program on this PC could ask them with two headers: a model deleted from a router, or one
+downloaded with its licence accepted for you. The base's changes are liminal-libs 1.99.0's to say (on `ModelServer`);
+the reads and the two services are asked by anyone, as before. The platform's check rests on its login's word that
+your browser is signed in, and a local login signs `secret` and `default` in with no password: it does not stop a
+program on this PC that signs itself in.
+
 ## From the command line
 
 ```

@@ -44,7 +44,7 @@ from . import models as _models
 from . import release as _release
 from . import server as _server
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 LIBS_FLOOR = "1.62.0"  # the AI plugins' bases (machines/ai.py, machines/modelserver.py) and llama.cpp's mark
 
 
@@ -128,6 +128,12 @@ class LlamaCppPlugin(ModelServer):
     # What it says of the interface it shares (read by name by the Internal API tab): its own reads beside its
     # bases' (a lookup at the Hub, its kept lookups forgotten, a model's details); what it keeps through the login
     READ_HOOKS = ("find", "clear_found", "details")
+    # Who may ask its own changes (0.1.1; liminal-libs 1.66.0's word, which liminal-platform 0.34.0 reads): a model
+    # downloaded, deleted, loaded or unloaded, and the build Install brings, are asked only from its page, never by
+    # another plugin nor by an ask that names no one. Its own five alone: the names add up along the class line, so
+    # the base's changes (an install, a start, a stop, a key: liminal-libs 1.99.0 says them on ModelServer) are the
+    # library's to say
+    PAGE_ONLY_HOOKS = ("pull", "delete_model", "load", "unload", "build")
     RUN_STATE = LlamaRun
     arch: str | None = None  # this processor's word (platform.machine() when None): a test's stand-in
 

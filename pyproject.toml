@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "plugin-platform-llamacpp"
-version = "0.1.0"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
+version = "0.1.1"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
 description = "llama.cpp for Liminal: llama.cpp's server installed, started and stopped on this machine as a router, found here or reached on another machine, its GGUF models looked up, downloaded, loaded and asked."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.1.1 (2026-11-25)
+
+Its own changes are asked only from the page (`PAGE_ONLY_HOOKS`, liminal-libs 1.66.0's word): the independent review's
+finding PLT-H1, the sweep of every plugin's hooks that followed it, and the review of that sweep (2026-11-25). The
+user, 2026-11-25, chose "Plugin releases": each plugin says which of its hooks only its page asks.
+
+- **What only the page asks**: `pull`, `delete_model`, `load`, `unload` and `build`. Another plugin's ask of one is
+  refused (403), and so is an ask that names no asker; liminal-platform 0.34.0 refuses one over HTTP (401) unless its
+  login shows that you are at the page. A platform that holds no login asks them as before. The 401 rests on the
+  login's word that your browser is signed in, and a local login signs `secret` and `default` in with no password, so
+  a program on this PC can sign itself in and ask them still: a proof that a program cannot make is the login's and
+  the platform's to give, not this plugin's.
+- **Before**, the platform handed an ask of any program on this PC (`POST /api/machines/llamacpp/ask` or `/job`, with
+  a header anyone can send and a Host the client chooses, no sign-in) straight to the hook it named. `delete_model`
+  with `[instance, model]` deleted a model its router had downloaded, asked once, with the instance's key. `pull`
+  downloaded a model after a `find` anyone asks, its licence accepted by an argument the asker sets
+  (`accept_licence`). `load` had a router load a model, `unload` took one out from under whoever was using it, and
+  `build` changed the build the next Install brings.
+- **The base's changes** (an install, an instance added, a start, a stop, a key, a prompt sent) are liminal-libs
+  1.99.0's to say, on `ModelServer`: this plugin names its own five alone, and the names add up along the class line.
+  On an older library those are asked by anyone still.
+- **As before**: its reads are asked by anyone (`find`, `clear_found`, `details`, and the base's), and so are `serving`
+  and `models_of`, which the harnesses ask through the platform. The library floor stays 1.62.0: a library before
+  1.66.0 does not read the word, and liminal-platform 0.34.0 reads it from the plugin itself. What it sends the Hub
+  names this release (`User-Agent: plugin-platform-llamacpp/0.1.1`).
+- Tests: `tests/test_who_asks.py`, through the library's own App over the stand-in router and Hub: each of the five
+  refused to another plugin and to no one, nothing asked of the router or the Hub and no build kept; the same five
+  asked from the page, each sent or kept; the reads and `serving` answered to a plugin. A hook taken out of
+  `PAGE_ONLY_HOOKS` fails it. Skipped on a library before 1.66.0.
+
 ## 0.1.0 (2026-11-18)
 
 The first release: llama.cpp for Liminal (the user, 2026-11-16: "claude i need 3 plugins for inference serving local
