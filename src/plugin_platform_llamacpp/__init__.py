@@ -44,7 +44,7 @@ from . import models as _models
 from . import release as _release
 from . import server as _server
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 LIBS_FLOOR = "1.62.0"  # the AI plugins' bases (machines/ai.py, machines/modelserver.py) and llama.cpp's mark
 
 

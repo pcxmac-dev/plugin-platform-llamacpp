@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.2 (2026-11-27)
+
+Its lookups are asked only from the page: the review of item 14 (plugins-os-ai P3-1), so that the four engines
+agree (vLLM 0.1.3 and LMDeploy 0.1.1 did the same with their `find` and `clear_found`). The user, 2026-11-26, of
+reads that reach outside or with a key: "Page-only".
+
+- **What only the page asks, besides its changes**: `find` (a lookup at the Hugging Face Hub about a name of the
+  asker's choosing, kept an hour for a download's second confirmation), `clear_found` (it empties what the Models tab
+  keeps) and `details` (it asks an instance, another machine's with its key). Another plugin's ask of one and an ask
+  that names no one are refused (403) before the Hub or an instance is asked. The Models tab asks them as the page,
+  as before.
+- **Before**, the three were in `READ_HOOKS`: anyone on this PC could have the Hub asked, the lookups forgotten, or
+  an instance asked about a model, with no click.
+- It has no reads of its own now; the base's (`choose`, `log_of`, `models`, `serving`, `models_of`) and `status` are
+  asked by anyone, as before. What it sends the Hub names this release (`User-Agent: plugin-platform-llamacpp/0.1.2`).
+- Tests: `tests/test_who_asks.py`, each of the three refused to another plugin and to no one, nothing asked and the
+  kept lookup still there, the page's three answered; `tests/test_contract.py`'s declaration.
+
 ## 0.1.1 (2026-11-25)
 
 Its own changes are asked only from the page (`PAGE_ONLY_HOOKS`, liminal-libs 1.66.0's word): the independent review's

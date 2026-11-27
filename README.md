@@ -146,10 +146,10 @@ The base's (`machines/modelserver.py`): `present`, `status`, `refresh`, `install
 `uninstall(accept_removal)`, `choose`, `add_instance`, `change_instance`, `remove_instance`, `set_key`, `forget_key`,
 `share`, `start`, `stop`, `boot`, `log_of`, `models` (the Models tab), `try_it`, and the two services other plugins
 ask through the platform, `serving(name="")` and `models_of(name)` (the base's answers, a model still downloading or
-not whole left out: a harness is never offered one the router would refuse). Its own: `find(model)` and `clear_found()` (reads),
+not whole left out: a harness is never offered one the router would refuse). Its own: `find(model)`, `clear_found()`,
 `pull(name, model, accept_licence, log)` (a job, Cancel), `delete_model(name, model)`, `load(name, model)`,
-`unload(name, model)`, `details(name, model)` (a read), `build(which)`. For the Internal API tab it declares its reads
-(`READ_HOOKS = ("find", "clear_found", "details")`) and what it keeps through the login (`KEEPS`: its instances,
+`unload(name, model)`, `details(name, model)`, `build(which)`. For the Internal API tab it declares no reads of its own
+(the base's `READ_HOOKS` alone) and what it keeps through the login (`KEEPS`: its instances,
 each instance's key as its own pair, the build). A refusal that a second confirmation accepts names its argument
 (`accept`), and the page asks again before sending it.
 
@@ -158,7 +158,10 @@ Who may ask them (0.1.1; the sweep after the independent review's finding PLT-H1
 plugin's ask of one is refused, and liminal-platform 0.34.0 refuses one over HTTP unless its login shows that you are
 at the page. Before, any program on this PC could ask them with two headers: a model deleted from a router, or one
 downloaded with its licence accepted for you. The base's changes are liminal-libs 1.99.0's to say (on `ModelServer`);
-the reads and the two services are asked by anyone, as before. The platform's check rests on its login's word that
+the base's reads and the two services are asked by anyone, as before. Its lookups are the page's too (0.1.2; the
+review of item 14, P3-1, as vLLM's and LMDeploy's are): `find` asks the Hub about a name of the asker's choosing,
+`clear_found` empties the Models tab's lookups, and `details` asks an instance, another machine's with its key, so
+another plugin's ask of one, or one that names no one, is refused. The platform's check rests on its login's word that
 your browser is signed in, and a local login signs `secret` and `default` in with no password: it does not stop a
 program on this PC that signs itself in.
 

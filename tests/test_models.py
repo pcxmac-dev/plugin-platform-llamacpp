@@ -125,7 +125,7 @@ def test_a_lookup_reads_the_card_and_the_files_and_is_kept(world):
     assert found.licence_page == "https://ai.google.dev/gemma/terms" and p.found_of(TARGET) is found
     _, url, headers, _ = world.transport.asked[0]
     assert url == f"https://{HUB}/api/models/{REPO}" and "Authorization" not in headers
-    assert headers["User-Agent"] == "plugin-platform-llamacpp/0.1.1"
+    assert headers["User-Agent"] == "plugin-platform-llamacpp/0.1.2"
     assert world.transport.asked[1][1] == f"https://{HUB}/api/models/{REPO}/tree/main?recursive=true"
 
 

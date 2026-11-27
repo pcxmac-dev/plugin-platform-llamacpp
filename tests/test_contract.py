@@ -74,7 +74,7 @@ def test_its_icon_is_its_makers_mark_drawn_by_the_library():
 
 
 def test_its_version_and_floor_are_pyprojects():
-    assert re.search(r'^version = "([^"]+)"', PYPROJECT, re.M).group(1) == module.__version__ == "0.1.1"
+    assert re.search(r'^version = "([^"]+)"', PYPROJECT, re.M).group(1) == module.__version__ == "0.1.2"
     assert re.search(r'"liminal-libs>=([^"]+)"', PYPROJECT).group(1) == module.LIBS_FLOOR == "1.62.0"
     assert module.MACHINE.LIBS_FLOOR == module.LIBS_FLOOR and module.MACHINE.too_old() == ""
     assert 'llamacpp = "plugin_platform_llamacpp"' in PYPROJECT
