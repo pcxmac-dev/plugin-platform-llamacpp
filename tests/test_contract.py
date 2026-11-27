@@ -47,7 +47,10 @@ def test_it_says_what_it_shares_its_reads_and_what_it_keeps():
     """The Internal API tab reads these by name (C's internal.declared): its own reads beside the bases', none a job
     nor a hook that takes an accept_*; and what it keeps through the login beside its keys."""
     p = module.MACHINE
-    assert p.READ_HOOKS == ("find", "clear_found", "details") and set(p.READ_HOOKS) <= set(p.HOOKS)
+    # no reads of its own since 0.1.2: its lookup at the Hub (find), the lookups forgotten (clear_found) and a model's
+    # details asked of an instance are its page's alone
+    assert "READ_HOOKS" not in type(p).__dict__ and {"find", "clear_found", "details"} <= set(p.PAGE_ONLY_HOOKS)
+    assert not {"find", "clear_found", "details"} & set(p.READ_HOOKS) and set(p.READ_HOOKS) <= set(p.HOOKS)
     assert not set(p.READ_HOOKS) & set(p.JOB_HOOKS)
     for hook in p.READ_HOOKS:
         assert not [a for a in inspect.signature(getattr(p, hook)).parameters if a.startswith("accept_")]

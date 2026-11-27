@@ -125,15 +125,16 @@ class LlamaCppPlugin(ModelServer):
     HOOKS = (*ModelServer.HOOKS, "find", "clear_found", "pull", "delete_model", "load", "unload", "details", "build")
     JOB_HOOKS = (*ModelServer.JOB_HOOKS, "pull")
     CANCEL_HOOKS = (*ModelServer.CANCEL_HOOKS, "pull")
-    # What it says of the interface it shares (read by name by the Internal API tab): its own reads beside its
-    # bases' (a lookup at the Hub, its kept lookups forgotten, a model's details); what it keeps through the login
-    READ_HOOKS = ("find", "clear_found", "details")
     # Who may ask its own changes (0.1.1; liminal-libs 1.66.0's word, which liminal-platform 0.34.0 reads): a model
     # downloaded, deleted, loaded or unloaded, and the build Install brings, are asked only from its page, never by
-    # another plugin nor by an ask that names no one. Its own five alone: the names add up along the class line, so
+    # another plugin nor by an ask that names no one. Its own alone: the names add up along the class line, so
     # the base's changes (an install, a start, a stop, a key: liminal-libs 1.99.0 says them on ModelServer) are the
-    # library's to say
-    PAGE_ONLY_HOOKS = ("pull", "delete_model", "load", "unload", "build")
+    # library's to say. Its lookups are the page's too (0.1.2; the review of item 14, P3-1, as vLLM's and LMDeploy's
+    # are; the user, 2026-11-26, of reads that reach outside or with a key: "Page-only"): find asks the Hugging Face
+    # Hub about a name of the asker's choosing and keeps what it read for a download's second confirmation,
+    # clear_found empties what the Models tab keeps, and details asks an instance, another machine's with its key. So
+    # it has no reads of its own: the bases' come by themselves
+    PAGE_ONLY_HOOKS = ("pull", "delete_model", "load", "unload", "build", "find", "clear_found", "details")
     RUN_STATE = LlamaRun
     arch: str | None = None  # this processor's word (platform.machine() when None): a test's stand-in
 
